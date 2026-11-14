@@ -10,6 +10,10 @@ import java.util.stream.Collectors;
 public class Simplifier {
 
     public static Node simplify(Node n) {
+        if (n instanceof Call call) {
+            return new Call(call.name(), simplify(call.arg()));
+        }
+
         if (!(n instanceof Chain c)) return n;
         char kind = c.kind();
         boolean sum = kind == '+';

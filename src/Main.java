@@ -27,12 +27,6 @@ public class Main {
             System.out.println();
         }
 
-        System.out.println("=== Simplification tests ===\n");
-        for (String expr : SIMPLIFY_EXPRESSIONS) {
-            analyzeAndPrint(expr, true);
-            System.out.println();
-        }
-
         System.out.println("=== Interactive mode (an empty line indicates exit) ===");
         boolean simplify = false;
         try (Scanner sc = new Scanner(System.in)) {
@@ -71,8 +65,16 @@ public class Main {
             System.out.println("Result: The expression is correct ✔");
             try {
                 Node ast = new AstBuilder(tokens).build();
+                LevelPrinter.Result before = LevelPrinter.analyze(ast);
 
                 System.out.println("AST: " + ast);
+
+                Map<String, Double> vars = new HashMap<>();
+                for (Token t : tokens) {
+                    if (t.type() == TokenType.IDENTIFIER) {
+                        vars.putIfAbsent(t.text(), 1.5 + 0.7 * vars.size());
+                    }
+                }
 
                 Node flat = Flattener.flatten(ast);
                 System.out.println("Flat: " + flat);
@@ -98,14 +100,15 @@ public class Main {
                 System.out.println("Parallel: " + parallel);
                 LevelPrinter.Result res = LevelPrinter.analyze(parallel);
                 LevelPrinter.print(res);
+
+                System.out.println("Commutative regrouping: height " + before.height() + " -> " + res.height()
+                        + ", width " + before.width() + " -> " + res.width()
+                        + (res.height() < before.height()
+                        ? "  (reduced by " + (before.height() - res.height()) + ")"
+                        : "  (no gain)"));
+
                 TreeRenderer.savePng(parallel, res, "out/tree_" + (++treeCounter) + ".png");
 
-                Map<String, Double> vars = new HashMap<>();
-                for (Token t : tokens) {
-                    if (t.type() == TokenType.IDENTIFIER) {
-                        vars.putIfAbsent(t.text(), 1.5 + 0.7 * vars.size());
-                    }
-                }
                 double v1 = Evaluator.eval(ast, vars);
                 double v2 = Evaluator.eval(parallel, vars);
                 boolean same = Math.abs(v1 - v2) <= 1e-9 * Math.max(1, Math.abs(v1));
@@ -121,25 +124,18 @@ public class Main {
         }
     }
 
+    private static boolean containsCall(Node n) {
+        if (n instanceof Call) return true;
+        if (n instanceof BinOp b) return containsCall(b.left()) || containsCall(b.right());
+        return false;
+    }
+
     private static final String[] DEMO_EXPRESSIONS = {
-            // M1-M4: mandatory
-            "a+b+c+d+e+f+g+h",
-            "a-b-c-d-e-f-g-h",
-            "a/b/c/d/e/f/g/h",
-            "a*(b-4) - 2*b*c - c*d - a*c*d/e/f/g - g-h-i-j",
-
-            // P1-P2: parentheses
-            "a+(b+c+d+(e+f)+g)+h",
-            "a-((b-c-d)-(e-f)-g)-h",
-
-            // E1-E3: expected values 0.125, -35, 39
-            "5040/8/7/6/5/4/3/2",
-            "10-9-8-7-6-5-4-3-2-1",
-            "64-(32-16)-8-(4-2-1)"
-    };
-
-    private static final String[] SIMPLIFY_EXPRESSIONS = {
-            "0-(0-i)/1.0 + 0 - 0*k*h + 2 - 4.8/2 + 1*e/2",
-            "a*2/0 + b/(b+b*0-1*b) - 1/(c*2*4.76*(1-2+1))"
+            // K1-K5: commutative law tests
+            "a-b*c+k",
+            "A - B*c - L*k*2 + D*t/d*y - H + Q*3 - J*(w-1)/r + P",
+            "A-B*c-J*(d*t*j-u*t+c*r-1+w-k/q+m*(n-k*s+z*(y+u*p-y/r-5)+x+t/2))/r+P",
+            "a + b*c + d + e*f*g + h*i + j*(k + L + m*(n-p*q+r) - s*t)",
+            "exp(sin(a+b/2-pi)+a*cos(a*pi+b*pi/3-w+k*t)-5+log(2.72)/T-1)+2048+a+b*c+log(t-1)-2*log(Q)-8*d/dt*exp(t/2+H)-sin(a)/cos(a)"
     };
 }

@@ -3,6 +3,7 @@ package parser;
 import lexer.Token;
 import lexer.TokenType;
 import tree.BinOp;
+import tree.Call;
 import tree.Leaf;
 import tree.Node;
 
@@ -46,7 +47,7 @@ public class AstBuilder {
         return left;
     }
 
-    // factor := NUMBER | IDENTIFIER | '(' expr ')'
+    // factor := NUMBER | IDENTIFIER | FUNCTION '(' expr ')' | '(' expr ')'
     private Node parseFactor() {
         Token t = advance();
         switch (t.type()) {
@@ -58,6 +59,15 @@ public class AstBuilder {
                     throw new IllegalArgumentException("Expected ')'");
                 }
                 return inner;
+            case FUNCTION:
+                if (advance().type() != TokenType.LPAREN) {
+                    throw new IllegalArgumentException("Expected '(' after " + t.text());
+                }
+                Node arg = parseExpr();
+                if (advance().type() != TokenType.RPAREN) {
+                    throw new IllegalArgumentException("Expected ')'");
+                }
+                return new Call(t.text().toLowerCase(), arg);
             default:
                 throw new IllegalArgumentException("Unsupported token: " + t);
         }

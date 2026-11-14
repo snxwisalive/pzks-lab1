@@ -13,6 +13,11 @@ public class Flattener {
             collect(b, kind, true, pos, neg);
             return new Chain(kind, pos, neg);
         }
+
+        if (node instanceof Call c) {
+            return new Call(c.name(), flatten(c.arg()));
+        }
+
         return node; // leaf
     }
 

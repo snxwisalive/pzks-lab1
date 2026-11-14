@@ -11,11 +11,12 @@ public class ParallelBuilder {
 
     public static Node build(Node n) {
         if (n instanceof Chain c) return buildChain(c);
+        if (n instanceof Call c) return new Call(c.name(), build(c.arg()));
         return n; // leaf
     }
 
     private static Node buildChain(Chain c) {
-        char plus = c.kind();                        // '+' or '*'
+        char plus = c.kind();
         char minus = (plus == '+') ? '-' : '/';
 
         PriorityQueue<Entry> pq = new PriorityQueue<>(
@@ -57,6 +58,7 @@ public class ParallelBuilder {
     public static int height(Node n) {
         if (n instanceof Leaf) return 0;
         if (n instanceof BinOp b) return 1 + Math.max(height(b.left()), height(b.right()));
+        if (n instanceof Call c) return 1 + height(c.arg());
         throw new IllegalArgumentException("Chain must be built first");
     }
 }
