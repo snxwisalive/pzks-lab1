@@ -113,6 +113,21 @@ public class Main {
                 double v2 = Evaluator.eval(parallel, vars);
                 boolean same = Math.abs(v1 - v2) <= 1e-9 * Math.max(1, Math.abs(v1));
                 System.out.println("Value: " + v1 + ", parallel: " + v2 + (same ? "  OK" : "  MISMATCH"));
+
+                int limit = 500;
+                List<FactorSearch.Form> forms = FactorSearch.explore(flat, limit);
+                System.out.println("Forms found: " + forms.size() + (forms.size() >= limit ? " (limit reached)" : ""));
+                boolean allOk = true;
+                for (FactorSearch.Form f : forms) {
+                    LevelPrinter.Result r2 = LevelPrinter.analyze(ParallelBuilder.build(f.node()));
+                    boolean ok = Math.abs(Evaluator.eval(f.node(), vars) - v1) <= 1e-9 * Math.max(1, Math.abs(v1));
+                    allOk &= ok;
+                    System.out.println("  " + f.id() + ") " + Infix.of(f.node())
+                            + "  ::: from " + f.parent() + " via " + f.label()
+                            + "  [height " + r2.height() + ", operations " + r2.opCount() + "]"
+                            + (ok ? "" : "  MISMATCH"));
+                }
+                System.out.println("All forms equivalent: " + (allOk ? "OK" : "MISMATCH"));
             } catch (IllegalArgumentException e) {
                 System.out.println("AST: not built (" + e.getMessage() + ")");
             }
@@ -131,11 +146,12 @@ public class Main {
     }
 
     private static final String[] DEMO_EXPRESSIONS = {
-            // K1-K5: commutative law tests
-            "a-b*c+k",
-            "A - B*c - L*k*2 + D*t/d*y - H + Q*3 - J*(w-1)/r + P",
-            "A-B*c-J*(d*t*j-u*t+c*r-1+w-k/q+m*(n-k*s+z*(y+u*p-y/r-5)+x+t/2))/r+P",
-            "a + b*c + d + e*f*g + h*i + j*(k + L + m*(n-p*q+r) - s*t)",
-            "exp(sin(a+b/2-pi)+a*cos(a*pi+b*pi/3-w+k*t)-5+log(2.72)/T-1)+2048+a+b*c+log(t-1)-2*log(Q)-8*d/dt*exp(t/2+H)-sin(a)/cos(a)"
+            "a*b+a*c+b*c",
+            "a*(b-2)+c*(b-2)",
+            "a*b-2*a+b*c-c*2",
+            "a/b-c/b+2/b",
+            "a/(b-1)-c/(b-1)+2/(b-1)-t",
+            "a-b*k+b*t-f*f*5.9+f*q+g*f*5.9-g*q-f/(d+q-w)-g/(d+q-w)",
+            "a-b*k+b*t-b*f*f*5.9+b*f*q+b*g*f*5.9-b*g*q-b*w/p+b*y*m/p-b*y/p-x*x/(d+q-w)+3*x/(d+q-w)+3*x/(d+q-w)+3*3/(d+q-w)"
     };
 }

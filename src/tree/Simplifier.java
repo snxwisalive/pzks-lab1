@@ -104,7 +104,7 @@ public class Simplifier {
         }
     }
 
-    private static String key(Node n) {
+    static String key(Node n) {
         if (n instanceof Leaf l) return l.name();
         if (n instanceof Chain c) {
             return c.kind() + "[" + sortedKeys(c.pos()) + "|" + sortedKeys(c.neg()) + "]";
