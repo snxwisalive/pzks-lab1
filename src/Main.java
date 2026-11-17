@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.Locale;
 
 public class Main {
     private static int treeCounter = 0;
@@ -27,19 +28,28 @@ public class Main {
             System.out.println();
         }
 
-        System.out.println("=== Interactive mode (an empty line indicates exit) ===");
+        System.out.println("=== Interactive mode (an empty line indicates exit) | :s on/off to switch simplifier; :v on/off to switch VLIW scheduler ===");
         boolean simplify = false;
         try (Scanner sc = new Scanner(System.in)) {
             while (true) {
-                System.out.print("Enter an expression [simplify: " + (simplify ? "on" : "off") + "]> ");
+                System.out.print("Enter an expression [simplify: " + (simplify ? "on" : "off") + " | VLIW: " + (showSchedule ? "on" : "off") + "]> ");
                 if (!sc.hasNextLine()) break;
                 String line = sc.nextLine();
+
                 if (line.isBlank()) break;
+
                 if (line.startsWith(":s")) {
                     simplify = line.contains("on");
                     System.out.println("Simplification: " + (simplify ? "ON" : "OFF"));
                     continue;
                 }
+
+                if (line.startsWith(":v")) {
+                    showSchedule = line.contains("on");
+                    System.out.println("VLIW schedule output: " + (showSchedule ? "ON" : "OFF"));
+                    continue;
+                }
+
                 analyzeAndPrint(line, simplify);
                 System.out.println();
             }
@@ -101,6 +111,22 @@ public class Main {
                 LevelPrinter.Result res = LevelPrinter.analyze(parallel);
                 LevelPrinter.print(res);
 
+                try {
+                    sim.VliwConfig vliw = sim.VliwConfig.defaults();
+                    List<sim.Task> tasks = sim.TaskGraph.build(parallel, vliw);
+                    sim.VliwScheduler.Result vr = new sim.VliwScheduler(vliw).run(tasks);
+                    if (showSchedule) {
+                        System.out.println("Task graph: " + sim.TaskGraph.describe(tasks));
+                        sim.VliwScheduler.print(vr, vliw);
+                    } else {
+                        System.out.println(String.format(Locale.ROOT,
+                                "VLIW: T = %d, T1 = %d, speedup = %.2f, efficiency = %.2f",
+                                vr.time(), vr.sequentialTime(), vr.speedup(), vr.efficiency()));
+                    }
+                } catch (IllegalArgumentException e) {
+                    System.out.println("VLIW: " + e.getMessage());
+                }
+
                 System.out.println("Commutative regrouping: height " + before.height() + " -> " + res.height()
                         + ", width " + before.width() + " -> " + res.width()
                         + (res.height() < before.height()
@@ -139,6 +165,8 @@ public class Main {
         }
     }
 
+    private static boolean showSchedule = true;
+
     private static boolean containsCall(Node n) {
         if (n instanceof Call) return true;
         if (n instanceof BinOp b) return containsCall(b.left()) || containsCall(b.right());
@@ -146,12 +174,8 @@ public class Main {
     }
 
     private static final String[] DEMO_EXPRESSIONS = {
-            "a*b+a*c+b*c",
-            "a*(b-2)+c*(b-2)",
-            "a*b-2*a+b*c-c*2",
-            "a/b-c/b+2/b",
-            "a/(b-1)-c/(b-1)+2/(b-1)-t",
-            "a-b*k+b*t-f*f*5.9+f*q+g*f*5.9-g*q-f/(d+q-w)-g/(d+q-w)",
-            "a-b*k+b*t-b*f*f*5.9+b*f*q+b*g*f*5.9-b*g*q-b*w/p+b*y*m/p-b*y/p-x*x/(d+q-w)+3*x/(d+q-w)+3*x/(d+q-w)+3*3/(d+q-w)"
+            "a*b+c*d",
+            "a*(b-4) - 2*b*c - c*d - a*c*d/e/f/g - g-h-i-j",
+            "A - B*c - L*k*2 + D*t/d*y - H + Q*3 - J*(w-1)/r + P"
     };
 }
