@@ -154,6 +154,9 @@ public class Main {
                             + (ok ? "" : "  MISMATCH"));
                 }
                 System.out.println("All forms equivalent: " + (allOk ? "OK" : "MISMATCH"));
+
+                sim.FormComparison.print(sim.FormComparison.evaluate(forms, sim.VliwConfig.defaults()), 10);
+                sim.DirectedSearch.run(flat, sim.VliwConfig.defaults(), 5, 30);
             } catch (IllegalArgumentException e) {
                 System.out.println("AST: not built (" + e.getMessage() + ")");
             }

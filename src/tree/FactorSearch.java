@@ -25,7 +25,7 @@ public class FactorSearch {
     }
 
     // all forms obtained by a single expansion: at the top level and within nested operands
-    private static List<FactorForms.Step> neighbors(Node n) {
+    public static List<FactorForms.Step> neighbors(Node n) {
         List<FactorForms.Step> out = new ArrayList<>(FactorForms.factorOnce(n));
         if (n instanceof Chain c) {
             for (int i = 0; i < c.pos().size(); i++) {
